@@ -1,0 +1,8 @@
+@00 // sequenential fetch test code
+
+                            /* straight-line execution */
+/*00*/ 10000001 00010001    // add     r1,r1,r1
+/*02*/ 10000001 00010001    // add     r1,r1,r1
+/*04*/ 10000001 00010001    // add     r1,r1,r1
+/*06*/ 10000001 00010001    // add     r1,r1,r1
+/*08*/ 10000001 00010001    // add     r1,r1,r1

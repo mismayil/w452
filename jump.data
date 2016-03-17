@@ -1,0 +1,15 @@
+@00 // test loads and stores
+
+                            /* load 64 from mem[128] into r4, jump and link
+							 * there, and then return to calling code */
+/*00*/ 10110100 00111111    // ldp     r4,126(pc)
+/*02*/ 01010100 00000000    // jrl     (r4)
+/*04*/ 10000000 00000000    // add     r0,r0,r0
+
+@40 // subroutine
+/*40*/ 01001111 00000000    // jr      (r15)
+/*42*/ 10000000 00000000    // add     r0,r0,r0
+
+@80 // data
+/*80*/ 00000000 00000000    // 0x0000
+/*82*/ 00000000 01000000    // 0x0040 = 64

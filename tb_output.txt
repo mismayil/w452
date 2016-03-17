@@ -1,0 +1,64 @@
+iverilog -s tb_fetch -o tb_fetch.vvp w452.v regfile.v mem.v w452_tb.v ieee754_sp.v
+vvp tb_fetch.vvp
+VCD info: dumpfile dump.vcd opened for output.
+pc   0
+pc   2
+pc   4
+pc   6
+pc   8
+iverilog -s tb_math -o tb_math.vvp w452.v regfile.v mem.v w452_tb.v ieee754_sp.v
+vvp tb_math.vvp
+VCD info: dumpfile dump.vcd opened for output.
+r1=  z, r2=  z
+r1=  0, r2=  z
+r1=  1, r2=  z
+r1=  1, r2=  2
+r1=  1, r2= -2
+r1=  3, r2= -2
+iverilog -s tb_ldst -o tb_ldst.vvp w452.v regfile.v mem.v w452_tb.v ieee754_sp.v
+vvp tb_ldst.vvp
+VCD info: dumpfile dump.vcd opened for output.
+mem[128] 00000084
+mem[128] 0a0a0a0a
+mem[128] 0f0f0f0f
+iverilog -s tb_fp -o tb_fp.vvp w452.v regfile.v mem.v w452_tb.v ieee754_sp.v
+vvp tb_fp.vvp
+VCD info: dumpfile dump.vcd opened for output.
+r3 = xxxxxxxx
+r3 = c0100000
+r3 = 40700000
+r3 = c0100000
+r3 = be800000
+iverilog -s tb_branch -o tb_branch.vvp w452.v regfile.v mem.v w452_tb.v ieee754_sp.v
+vvp tb_branch.vvp
+VCD info: dumpfile dump.vcd opened for output.
+pc   0
+pc   2
+pc   4
+pc   6
+pc  12
+pc  14
+pc   6
+pc   8
+pc  10
+pc  14
+pc  16
+iverilog -s tb_jump -o tb_jump.vvp w452.v regfile.v mem.v w452_tb.v ieee754_sp.v
+vvp tb_jump.vvp
+VCD info: dumpfile dump.vcd opened for output.
+pc   0
+pc   2
+pc   4
+pc  64
+pc  66
+pc   4
+pc   6
+iverilog -s tb_mult -o tb_mult.vvp w452.v regfile.v mem.v w452_tb.v ieee754_sp.v
+vvp tb_mult.vvp
+VCD info: dumpfile dump.vcd opened for output.
+r1 =      z, r2 =      z, r3 =      z
+r1 =      z, r2 =     96, r3 =      z
+r1 =      z, r2 =     96, r3 =      7
+r1 =    672, r2 =     96, r3 =      7
+r1 =    672, r2 =     96, r3 =     -5
+r1 =   -480, r2 =     96, r3 =     -5
