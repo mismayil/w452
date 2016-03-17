@@ -80,20 +80,16 @@ module w452(
                     rtdata = (rt) ? reg_rd_data[1] : 0;
                     case (op)
                         OP_BEQ: begin
-                            if (rs == 0) pc <= pc + 1 + {{23{imm8[7]}}, imm8};
-                            else pc <= pc + 1;
+                            if (rsdata == 0) pc <= pc + {{23{imm8[7]}}, imm8};
                         end
                         OP_BNE: begin
-                            if (rs != 0) pc <= pc + 1 + {{23{imm8[7]}}, imm8};
-                            else pc <= pc + 1;
+                            if (rsdata != 0) pc <= pc + {{23{imm8[7]}}, imm8};
                         end
                         OP_BLT: begin
-                            if (rs < 0) pc <= pc + 1 + {{23{imm8[7]}}, imm8};
-                            else pc <= pc + 1;
+                            if (rsdata < 0) pc <= pc + {{23{imm8[7]}}, imm8};
                         end
                         OP_BLE: begin
-                            if (rs <= 0) pc <= pc + 1 + {{23{imm8[7]}}, imm8};
-                            else pc <= pc + 1;
+                            if (rsdata <= 0) pc <= pc + {{23{imm8[7]}}, imm8};
                         end
                         OP_ADD: begin
                             rddata <= rsdata + rtdata;
