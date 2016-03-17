@@ -43,41 +43,56 @@ module w452(
 		.op(sp_op), .go(sp_go),
 		.reset(reset), .clk(clk));
 
-    reg[31:1] pc;
+    reg sten, done = 1;
+    reg[31:1] pc, ldaddr, staddr, memaddr;
     reg[2:0] state;
     reg[15:0] instr;
-    reg[3:0] op, rs, rt, rd, imm;
+    reg[3:0] op, rs, rt, rd, imm4;
     reg[7:0] imm8;
-    reg[31:0] rsdata, rtdata, rddata;
+    reg[31:0] rsdata, rtdata, rddata, lddata, stdata, fpdata;
+    reg[31:0] regdata[0:1];
 
+    assign mem_wr_en = sten;
+    assign mem_wr_addr = staddr;
+    assign mem_wr_data = stdata;
     assign mem_rd0_addr = pc;
+    assign mem_rd1_addr = ldaddr;
     assign reg_rd_addr[0] = rs;
     assign reg_rd_addr[1] = rt;
+    assign reg_rd_data[0] = regdata[0];
+    assign reg_rd_data[1] = regdata[1];
 
     always@(posedge clk or posedge reset) begin
+
         if(reset) begin
             pc <= 0;
             state <= STATE_IF;
         end
+
         else begin
+
             case (state)
+
                 STATE_IF: begin
                     instr <= mem_rd0_data;
                     pc <= pc + 1;
                     state <= STATE_ID;
                 end
+
                 STATE_ID: begin
                     op <= instr[15:12];
                     rs <= instr[11:8];
                     imm8 <= instr[7:0];
                     rt <= instr[7:4];
-                    imm <= instr[3:0];
+                    imm4 <= instr[3:0];
                     rd <= instr[3:0];
                     state <= STATE_EX;
                 end
+
                 STATE_EX: begin
                     rsdata = (rs) ? reg_rd_data[0] : 0;
                     rtdata = (rt) ? reg_rd_data[1] : 0;
+
                     case (op)
                         OP_BEQ: begin
                             if (rsdata == 0) pc <= pc + {{23{imm8[7]}}, imm8};
@@ -97,25 +112,76 @@ module w452(
                         OP_SUB: begin
                             rddata <= rsdata - rtdata;
                         end
-                        OP_JR:  begin end
-                        OP_JRL: begin end
-                        OP_LD:  begin end
-                        OP_ST:  begin end
-                        OP_ADI: begin
-                            rddata <= rsdata + {{24{imm8[7]}}, imm8};
+                        OP_JR:  begin
+                            pc <= rsdata[31:1] + {{23{imm8[7]}}, imm8};
                         end
-                        OP_LDP: begin end
-                        OP_FAD: begin end
-                        OP_FSB: begin end
-                        OP_FML: begin end
-                        OP_FDV: begin end
+                        OP_JRL: begin
+                            rddata <= {pc, 1'b0} + 2;
+                            pc <= rsdata[31:1] + {{23{imm8[7]}}, imm8};
+                        end
+                        OP_LD:  begin
+                            memaddr <= rsdata[31:1] + {{{26{imm4[3]}}, imm4}, 1'b0};
+                        end
+                        OP_ST:  begin
+                            memaddr <= rsdata[31:1] + {{{26{imm4[3]}}, imm4}, 1'b0};
+                        end
+                        OP_ADI: begin
+                            rsdata <= rsdata + {{24{imm8[7]}}, imm8};
+                        end
+                        OP_LDP: begin
+                            memaddr <= pc + {{23{imm8[7]}}, imm8};
+                        end
+                        OP_FAD: begin
+                            regdata[0] <= rsdata;
+                            regdata[1] <= rtdata;
+                            done <= 0;
+                            sp_go <= 1;
+                            sp_op <= SP_ADD;
+                        end
+                        OP_FSB: begin
+                            regdata[0] <= rsdata;
+                            regdata[1] <= rtdata;
+                            done <= 0;
+                            sp_go <= 1;
+                            sp_op <= SP_SUB;
+                        end
+                        OP_FML: begin
+                            regdata[0] <= rsdata;
+                            regdata[1] <= rtdata;
+                            done <= 0;
+                            sp_go <= 1;
+                            sp_op <= SP_MULT;
+                        end
+                        OP_FDV: begin
+                            regdata[0] <= rsdata;
+                            regdata[1] <= rtdata;
+                            done <= 0;
+                            sp_go <= 1;
+                            sp_op <= SP_DIV;
+                        end
                     endcase
+
                     state <= STATE_ME;
                 end
+
                 STATE_ME: begin
+                    if (op == OP_LD || op == OP_LDP) begin
+                        ldaddr <= memaddr;
+                    end
+
+                    if (op == OP_ST) begin
+                        sten <= 1;
+                        staddr <= memaddr;
+                        stdata <= rtdata;
+                    end
+
                     state <= STATE_WB;
                 end
+
                 STATE_WB: begin
+                    lddata = mem_rd1_data;
+                    fpdata = sp_out;
+
                     if (op == OP_ADD || op == OP_SUB || op == OP_FAD || op == OP_FSB || op == OP_FML || op == OP_FDV) begin
                         reg_wr_en <= 1;
                         reg_wr_addr <= rd;
@@ -125,10 +191,36 @@ module w452(
                     if (op == OP_ADI) begin
                         reg_wr_en <= 1;
                         reg_wr_addr <= rs;
+                        reg_wr_data <= rsdata;
+                    end
+
+                    if (op == OP_JRL) begin
+                        reg_wr_en <= 1;
+                        reg_wr_addr <= 15;
                         reg_wr_data <= rddata;
                     end
+
+                    if (op == OP_LD) begin
+                        reg_wr_en <= 1;
+                        reg_wr_addr <= rt;
+                        reg_wr_data <= lddata;
+                    end
+
+                    if (op == OP_LDP) begin
+                        reg_wr_en <= 1;
+                        reg_wr_addr <= rs;
+                        reg_wr_data <= lddata;
+                    end
+
+                    if (op == OP_FAD || op == OP_FSB || op == OP_FML || op == OP_FDV) begin
+                        reg_wr_en <= 1;
+                        reg_wr_addr <= rd;
+                        reg_wr_data <= fpdata;
+                    end
+
                     state <= STATE_IF;
                 end
+
                 default: state <= STATE_IF;
             endcase
         end
