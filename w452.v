@@ -43,14 +43,14 @@ module w452(
 		.op(sp_op), .go(sp_go),
 		.reset(reset), .clk(clk));
 
-    reg sten, done = 1;
+    reg sten;
+    reg[1:0] fpc;
     reg[31:1] pc, ldaddr, staddr, memaddr;
     reg[2:0] state;
     reg[15:0] instr;
     reg[3:0] op, rs, rt, rd, imm4;
     reg[7:0] imm8;
     reg[31:0] rsdata, rtdata, rddata, lddata, stdata, fpdata;
-    reg[31:0] regdata[0:1];
 
     assign mem_wr_en = sten;
     assign mem_wr_addr = staddr;
@@ -59,13 +59,14 @@ module w452(
     assign mem_rd1_addr = ldaddr;
     assign reg_rd_addr[0] = rs;
     assign reg_rd_addr[1] = rt;
-    assign reg_rd_data[0] = regdata[0];
-    assign reg_rd_data[1] = regdata[1];
 
     always@(posedge clk or posedge reset) begin
 
         if(reset) begin
             pc <= 0;
+            fpc <= 0;
+            reg_wr_en <= 0;
+            sten <= 0;
             state <= STATE_IF;
         end
 
@@ -76,6 +77,8 @@ module w452(
                 STATE_IF: begin
                     instr <= mem_rd0_data;
                     pc <= pc + 1;
+                    reg_wr_en <= 0;
+                    fpc <= 0;
                     state <= STATE_ID;
                 end
 
@@ -92,19 +95,20 @@ module w452(
                 STATE_EX: begin
                     rsdata = (rs) ? reg_rd_data[0] : 0;
                     rtdata = (rt) ? reg_rd_data[1] : 0;
+                    state <= STATE_ME;
 
                     case (op)
                         OP_BEQ: begin
-                            if (rsdata == 0) pc <= pc + {{23{imm8[7]}}, imm8};
+                            if (rsdata == 0) pc <= pc + {{24{imm8[7]}}, imm8};
                         end
                         OP_BNE: begin
-                            if (rsdata != 0) pc <= pc + {{23{imm8[7]}}, imm8};
+                            if (rsdata != 0) pc <= pc + {{24{imm8[7]}}, imm8};
                         end
                         OP_BLT: begin
-                            if (rsdata < 0) pc <= pc + {{23{imm8[7]}}, imm8};
+                            if (rsdata < 0) pc <= pc + {{24{imm8[7]}}, imm8};
                         end
                         OP_BLE: begin
-                            if (rsdata <= 0) pc <= pc + {{23{imm8[7]}}, imm8};
+                            if (rsdata <= 0) pc <= pc + {{24{imm8[7]}}, imm8};
                         end
                         OP_ADD: begin
                             rddata <= rsdata + rtdata;
@@ -112,56 +116,52 @@ module w452(
                         OP_SUB: begin
                             rddata <= rsdata - rtdata;
                         end
-                        OP_JR:  begin
-                            pc <= rsdata[31:1] + {{23{imm8[7]}}, imm8};
-                        end
-                        OP_JRL: begin
-                            rddata <= {pc, 1'b0} + 2;
-                            pc <= rsdata[31:1] + {{23{imm8[7]}}, imm8};
-                        end
-                        OP_LD:  begin
-                            memaddr <= rsdata[31:1] + {{{26{imm4[3]}}, imm4}, 1'b0};
-                        end
-                        OP_ST:  begin
-                            memaddr <= rsdata[31:1] + {{{26{imm4[3]}}, imm4}, 1'b0};
-                        end
                         OP_ADI: begin
                             rsdata <= rsdata + {{24{imm8[7]}}, imm8};
                         end
+                        OP_JR: begin
+                            pc <= rsdata[31:1] + {{24{imm8[7]}}, imm8};
+                        end
+                        OP_JRL: begin
+                            rddata <= {pc, 1'b0};
+                            pc <= rsdata[31:1] + {{24{imm8[7]}}, imm8};
+                        end
+                        OP_LD: begin
+                            memaddr <= rsdata[31:1] + ({{28{imm4[3]}}, imm4} << 1);
+                        end
+                        OP_ST: begin
+                            memaddr <= rsdata[31:1] + ({{28{imm4[3]}}, imm4} << 1);
+                        end
                         OP_LDP: begin
-                            memaddr <= pc + {{23{imm8[7]}}, imm8};
+                            memaddr <= pc + {{24{imm8[7]}}, imm8};
                         end
                         OP_FAD: begin
-                            regdata[0] <= rsdata;
-                            regdata[1] <= rtdata;
-                            done <= 0;
-                            sp_go <= 1;
                             sp_op <= SP_ADD;
                         end
                         OP_FSB: begin
-                            regdata[0] <= rsdata;
-                            regdata[1] <= rtdata;
-                            done <= 0;
-                            sp_go <= 1;
                             sp_op <= SP_SUB;
                         end
                         OP_FML: begin
-                            regdata[0] <= rsdata;
-                            regdata[1] <= rtdata;
-                            done <= 0;
-                            sp_go <= 1;
                             sp_op <= SP_MULT;
                         end
                         OP_FDV: begin
-                            regdata[0] <= rsdata;
-                            regdata[1] <= rtdata;
-                            done <= 0;
-                            sp_go <= 1;
                             sp_op <= SP_DIV;
                         end
                     endcase
 
-                    state <= STATE_ME;
+                    if (op == OP_FAD || op == OP_FSB || op == OP_FML || op == OP_FDV) begin
+                        if (fpc < 2) begin
+                            fpc <= fpc + 1;
+                            sp_go <= 1;
+                            state <= STATE_EX;
+                        end
+                        else begin
+                            if (sp_done) fpdata <= sp_out;
+                            else state <= STATE_EX;
+                            if (sp_go) sp_go <= 0;
+                        end
+                    end
+
                 end
 
                 STATE_ME: begin
@@ -180,9 +180,9 @@ module w452(
 
                 STATE_WB: begin
                     lddata = mem_rd1_data;
-                    fpdata = sp_out;
+                    sten <= 0;
 
-                    if (op == OP_ADD || op == OP_SUB || op == OP_FAD || op == OP_FSB || op == OP_FML || op == OP_FDV) begin
+                    if (op == OP_ADD || op == OP_SUB) begin
                         reg_wr_en <= 1;
                         reg_wr_addr <= rd;
                         reg_wr_data <= rddata;
