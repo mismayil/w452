@@ -1,0 +1,57 @@
+vvp tb_fetch.vvp
+VCD info: dumpfile dump.vcd opened for output.
+pc   0
+pc   2
+pc   4
+pc   6
+pc   8
+vvp tb_math.vvp
+VCD info: dumpfile dump.vcd opened for output.
+r1=  x, r2=  x
+r1=  0, r2=  x
+r1=  1, r2=  x
+r1=  1, r2=  2
+r1=  1, r2= -2
+r1=  3, r2= -2
+vvp tb_ldst.vvp
+VCD info: dumpfile dump.vcd opened for output.
+mem[128] 00000084
+mem[128] 0a0a0a0a
+mem[128] 0f0f0f0f
+vvp tb_fp.vvp
+VCD info: dumpfile dump.vcd opened for output.
+r3 = xxxxxxxx
+r3 = c0100000
+r3 = 40700000
+r3 = c0100000
+r3 = be800000
+vvp tb_branch.vvp
+VCD info: dumpfile dump.vcd opened for output.
+pc   0
+pc   2
+pc   4
+pc   6
+pc  12
+pc  14
+pc   6
+pc   8
+pc  10
+pc  14
+pc  16
+vvp tb_jump.vvp
+VCD info: dumpfile dump.vcd opened for output.
+pc   0
+pc   2
+pc   4
+pc  64
+pc  66
+pc   4
+pc   6
+vvp tb_mult.vvp
+VCD info: dumpfile dump.vcd opened for output.
+r1 =      x, r2 =      x, r3 =      x
+r1 =      x, r2 =     96, r3 =      x
+r1 =      x, r2 =     96, r3 =      7
+r1 =    672, r2 =     96, r3 =      7
+r1 =    672, r2 =     96, r3 =     -5
+r1 =   -480, r2 =     96, r3 =     -5

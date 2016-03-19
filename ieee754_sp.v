@@ -148,16 +148,16 @@ module ieee754_sp(output [31:0] d, output reg done,
                         exp = exp - 1;
                     end
                 end
-                if (exp == UNDERFLOW) begin
-                    sig[47:46] = 2'b01;
-                    {exp, sig[45:23]} = PZERO[30:0];
-                    done = 1;
-                end
-                if (exp == OVERFLOW) begin
-                    sig[47:46] = 2'b01;
-                    {exp, sig[45:23]} = PINFINITY[30:0];
-                    done = 1;
-                end
+                // if (exp == UNDERFLOW) begin
+                //     sig[47:46] = 2'b01;
+                //     {exp, sig[45:23]} = PZERO[30:0];
+                //     done = 1;
+                // end
+                // if (exp == OVERFLOW) begin
+                //     sig[47:46] = 2'b01;
+                //     {exp, sig[45:23]} = PINFINITY[30:0];
+                //     done = 1;
+                // end
                 else done = 1;
             end
         end

@@ -1,7 +1,7 @@
 source=w452.v regfile.v mem.v w452_tb.v ieee754_sp.v
 
 .PHONY: run
-run: fetch ldst fp branch jump mult
+run: fetch math ldst fp branch jump mult
 
 # tb_fetch
 .PHONY: fetch
